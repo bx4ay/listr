@@ -1,6 +1,6 @@
 # listr
 
-難解プログラミング言語listrのインタプリタ `listr.hs`
+難解プログラミング言語 listr のインタプリタ `listr.hs`
 
 ## 言語の概要
 
@@ -18,4 +18,4 @@
 
 ## チューリング完全性の証明
 
-`fromBF.hs` はBrainfuckで書かれたプログラムをlistrのプログラムに変換する。
+`fromBF.hs` は brainfuck で書かれたプログラムを listr のプログラムに変換する。
