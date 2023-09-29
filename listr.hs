@@ -14,18 +14,24 @@ exec = exec1 . tail . scanl (\ cases
     (')', i) c -> (c, i - 1)
     (_, i) c -> (c, i)
     ) (' ', 0) . filter (`elem` "().01|") where
+
+    exec1 :: [(Char, Int)] -> Term -> Term
     exec1 = \ case
         [] -> id
         s -> (\ case
             (s0, _ : s1) -> head . dropWhile (not . null . unT . exec2 s0) . iterate (exec1 s1)
             _ -> exec2 s
             ) $ span (/= ('|', snd $ head s)) s
+
+    exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
         [] -> id
         s -> (\ case
             (s0, _ : s1) -> \ x -> T $ exec3 s0 x : unT (exec2 s1 x)
             _ -> exec3 s
             ) $ span (/= ('.', snd $ head s)) s
+
+    exec3 :: [(Char, Int)] -> Term -> Term
     exec3 = \ case
         [] -> id
         ('0', _) : s -> \ case
