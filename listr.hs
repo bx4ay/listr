@@ -13,7 +13,7 @@ exec = exec1 . tail . scanl (\ cases
     ('(', i) c -> (c, i + 1)
     (')', i) c -> (c, i - 1)
     (_, i) c -> (c, i)
-    ) (' ', 0) . filter (`elem` "().01|") where
+    ) ('_', 0) . filter (`elem` "().01|") where
 
     exec1 :: [(Char, Int)] -> Term -> Term
     exec1 = \ case
