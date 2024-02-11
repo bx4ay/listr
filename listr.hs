@@ -17,21 +17,19 @@ exec = exec1 . tail . scanl (\ cases
     exec1 :: [(Char, Int)] -> Term -> Term
     exec1 = \ case
         [] -> id
-        s -> (\ case
+        s@((_, i) : _) -> (\ case
             (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
             (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
             _ -> exec2 s
-            ) $ break (\ (c, i) -> elem c ".|" && i == snd (head s)) s
+            ) $ break (`elem` (zip ".|" [i, i])) s
 
     exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
         [] -> id
         ('0', _) : s -> \ case
             T (x : _) -> exec2 s x
-            x -> x
-        ('1', _) : s -> \ case
-            T (_ : x) -> exec2 s $ T x
-            x -> x
+            x -> exec2 s x
+        ('1', _) : s -> exec2 s . T . drop 1 . unT
         ('(', i) : s -> (\ case
             (s0, _ : s1) -> exec2 s1 . exec1 s0
             _ -> errorWithoutStackTrace "parse error"
