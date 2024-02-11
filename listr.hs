@@ -8,7 +8,7 @@ unT :: Term -> [Term]
 unT (T x) = x
 
 exec :: [Char] -> Term -> Term
-exec = exec1 . tail . scanl (\ cases
+exec = exec1 . drop 1 . scanl (\ cases
     ('(', i) c -> (c, i + 1)
     (')', i) c -> (c, i - 1)
     (_, i) c -> (c, i)
@@ -16,12 +16,12 @@ exec = exec1 . tail . scanl (\ cases
 
     exec1 :: [(Char, Int)] -> Term -> Term
     exec1 = \ case
-        [] -> id
         s@((_, i) : _) -> (\ case
             (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
             (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
             _ -> exec2 s
             ) $ break (`elem` (zip ".|" [i, i])) s
+        _ -> id
 
     exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
