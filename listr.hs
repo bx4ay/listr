@@ -1,6 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
 
-import Data.Bifunctor (first)
 import System.Environment (getArgs)
 
 newtype Term = T [Term]
@@ -19,29 +18,22 @@ exec = exec1 . tail . scanl (\ cases
     exec1 = \ case
         [] -> id
         s -> (\ case
-            (s0, _ : s1) -> head . dropWhile (not . null . unT . exec2 s0) . iterate (exec1 s1)
+            (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
+            (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
             _ -> exec2 s
-            ) $ span (/= ('|', snd $ head s)) s
+            ) $ break (\ (c, i) -> elem c ".|" && i == snd (head s)) s
 
     exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
         [] -> id
-        s -> (\ case
-            (s0, _ : s1) -> \ x -> T $ exec3 s0 x : unT (exec2 s1 x)
-            _ -> exec3 s
-            ) $ span (/= ('.', snd $ head s)) s
-
-    exec3 :: [(Char, Int)] -> Term -> Term
-    exec3 = \ case
-        [] -> id
         ('0', _) : s -> \ case
-            T (x : _) -> exec3 s x
+            T (x : _) -> exec2 s x
             x -> x
         ('1', _) : s -> \ case
-            T (_ : x) -> exec3 s $ T x
+            T (_ : x) -> exec2 s $ T x
             x -> x
         ('(', i) : s -> (\ case
-            (s0, _ : s1) -> exec3 s1 . exec1 s0
+            (s0, _ : s1) -> exec2 s1 . exec1 s0
             _ -> errorWithoutStackTrace "parse error"
             ) $ span (/= (')', i + 1)) s
         _ -> errorWithoutStackTrace "parse error"
