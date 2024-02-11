@@ -50,4 +50,4 @@ main = do
         [filename] -> sequence [readFile filename, getContents]
         [filename0, filename1] -> mapM readFile [filename0, filename1]
         _ -> errorWithoutStackTrace "too many arguments"
-    putStr $ toStr $ exec code $ fromStr input
+    putStr . toStr . exec code $ fromStr input
