@@ -26,9 +26,7 @@ exec = exec1 . drop 1 . scanl (\ cases
     exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
         [] -> id
-        ('0', _) : s -> \ case
-            T (x : _) -> exec2 s x
-            x -> exec2 s x
+        ('0', _) : s -> exec2 s . (!! 0) . (++ [T []]) . unT
         ('1', _) : s -> exec2 s . T . drop 1 . unT
         ('(', i) : s -> (\ case
             (s0, _ : s1) -> exec2 s1 . exec1 s0
@@ -47,7 +45,7 @@ main = do
     args <- getArgs
     [code, input] <- case args of
         [] -> sequence [getLine, getContents]
-        [filename] -> sequence [readFile filename, getContents]
-        [filename0, filename1] -> mapM readFile [filename0, filename1]
+        [file] -> sequence [readFile file, getContents]
+        [file0, file1] -> mapM readFile [file0, file1]
         _ -> errorWithoutStackTrace "too many arguments"
     putStr . toStr . exec code $ fromStr input
