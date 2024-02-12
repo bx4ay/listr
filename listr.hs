@@ -8,30 +8,28 @@ unT :: Term -> [Term]
 unT (T x) = x
 
 exec :: [Char] -> Term -> Term
-exec = exec1 . drop 1 . scanl (\ cases
-    ('(', i) c -> (c, i + 1)
-    (')', i) c -> (c, i - 1)
-    (_, i) c -> (c, i)
+exec = exec1 . drop 1 . scanl (\ case
+    ('(', i) -> (, i + 1)
+    (')', i) -> (, i - 1)
+    (_, i) -> (, i)
     ) ('_', 0) . filter (`elem` "().01|") where
 
     exec1 :: [(Char, Int)] -> Term -> Term
     exec1 = \ case
         [] -> id
-        s@((_, i) : _) -> (\ case
+        s@((_, i) : _) -> case break (`elem` zip ".|" [i, i]) s of
             (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
             (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
             _ -> exec2 s
-            ) $ break (`elem` zip ".|" [i, i]) s
 
     exec2 :: [(Char, Int)] -> Term -> Term
     exec2 = \ case
         [] -> id
         ('0', _) : s -> exec2 s . (!! 0) . (++ [T []]) . unT
         ('1', _) : s -> exec2 s . T . drop 1 . unT
-        ('(', i) : s -> (\ case
+        ('(', i) : s -> case span (/= (')', i + 1)) s of
             (s0, _ : s1) -> exec2 s1 . exec1 s0
             _ -> errorWithoutStackTrace "parse error"
-            ) $ span (/= (')', i + 1)) s
         _ -> errorWithoutStackTrace "parse error"
 
 fromStr :: [Char] -> Term
