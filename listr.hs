@@ -18,7 +18,7 @@ exec = exec1 . drop 1 . scanl (\ case
     exec1 = \ case
         [] -> id
         s@((_, i) : _) -> case break (`elem` zip ".|" [i, i]) s of
-            (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
+            (s0, ('.', _) : s1) -> T . \ x -> exec2 s0 x : unT (exec1 s1 x)
             (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
             _ -> exec2 s
 
