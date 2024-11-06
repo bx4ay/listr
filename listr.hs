@@ -2,10 +2,7 @@
 
 import System.Environment (getArgs)
 
-newtype Term = T [Term]
-
-unT :: Term -> [Term]
-unT (T x) = x
+newtype Term = T {unT :: [Term]}
 
 exec :: [Char] -> Term -> Term
 exec = exec1 . drop 1 . scanl (\ case
