@@ -4,7 +4,7 @@ import System.Environment (getArgs)
 
 newtype Term = T {unT :: [Term]}
 
-exec :: [Char] -> Term -> Term
+exec :: String -> Term -> Term
 exec = exec1 . drop 1 . scanl (\ case
     ('(', i) -> (, i + 1)
     (')', i) -> (, i - 1)
@@ -29,18 +29,16 @@ exec = exec1 . drop 1 . scanl (\ case
             _ -> errorWithoutStackTrace "parse error"
         _ -> errorWithoutStackTrace "parse error"
 
-fromStr :: [Char] -> Term
+fromStr :: String -> Term
 fromStr = T . map (T . (`replicate` T []) . fromEnum)
 
-toStr :: Term -> [Char]
+toStr :: Term -> String
 toStr = map (toEnum . length . unT) . unT
 
 main :: IO ()
 main = do
     args <- getArgs
-    [code, input] <- case args of
-        [] -> sequence [getLine, getContents]
-        [file] -> sequence [readFile file, getContents]
-        [file0, file1] -> mapM readFile [file0, file1]
-        _ -> errorWithoutStackTrace "too many arguments"
-    putStr . toStr . exec code $ fromStr input
+    code <- case args of
+        path : _ -> readFile path
+        _ -> errorWithoutStackTrace "no input files"
+    interact $ toStr . exec code . fromStr
