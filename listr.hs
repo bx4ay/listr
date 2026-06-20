@@ -1,44 +1,49 @@
-{-# LANGUAGE LambdaCase #-}
+import System.Environment ( getArgs )
 
-import System.Environment (getArgs)
+newtype List = List {list :: [List]}
 
-newtype Term = T {unT :: [Term]}
+readL :: String -> List
+readL = List . map (List . (`replicate` List []) . fromEnum)
 
-exec :: String -> Term -> Term
-exec = exec1 . drop 1 . scanl (\ case
-    ('(', i) -> (, i + 1)
-    (')', i) -> (, i - 1)
-    (_, i) -> (, i)
-    ) (' ', 0) . concatMap (filter (`elem` "().01|") . takeWhile (/= '#')) . lines where
+showL :: List -> String
+showL = map (toEnum . length . list) . list
 
-    exec1 :: [(Char, Int)] -> Term -> Term
-    exec1 = \ case
-        [] -> id
-        s@((_, i) : _) -> case break (`elem` map (, i) ".|") s of
-            (s0, ('.', _) : s1) -> \ x -> T $ exec2 s0 x : unT (exec1 s1 x)
-            (s0, ('|', _) : s1) -> until (null . unT . exec2 s0) $ exec1 s1
-            _ -> exec2 s
+data Term = Head [Term] | Tail [Term] | Cons [Term] [Term] | While [Term] [Term]
 
-    exec2 :: [(Char, Int)] -> Term -> Term
-    exec2 = \ case
-        [] -> id
-        ('0', _) : s -> exec2 s . (!! 0) . (++ [T []]) . unT
-        ('1', _) : s -> exec2 s . T . drop 1 . unT
-        ('(', i) : s -> case break (== (')', i + 1)) s of
-            (s0, _ : s1) -> exec2 s1 . exec1 s0
-            _ -> errorWithoutStackTrace "parse error"
-        _ -> errorWithoutStackTrace "parse error"
+parse :: String -> [Term]
+parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
+    (x, "") -> x
+    _ -> errorWithoutStackTrace "unmatched brackets"
+    where
+    parse1 :: String -> ([Term], String)
+    parse1 s = let (x, s1) = parse2 [] s in case s1 of
+        '.' : s2 -> let (y, s2) = parse1 s2 in ([Cons x y], s2)
+        '|' : s2 -> let (y, s2) = parse1 s2 in ([While x y], s2)
+        _ -> (x, s1)
 
-fromStr :: String -> Term
-fromStr = T . map (T . (`replicate` T []) . fromEnum)
+    parse2 :: [Term] -> String -> ([Term], String)
+    parse2 x [] = (x, [])
+    parse2 x ('0' : s) = parse2 (x ++ [Head []]) s
+    parse2 x ('1' : s) = parse2 (x ++ [Tail []]) s
+    parse2 x ('(' : s) = case parse1 s of
+            (y, ')' : s1) -> parse2 (x ++ y) s1
+            _ -> errorWithoutStackTrace "unmatched brackets"
+    parse2 x (c : s) | c `elem` ".)|" = (x, c : s)
+    parse2 x (_ : s) = parse2 x s
 
-toStr :: Term -> String
-toStr = map (toEnum . length . unT) . unT
+exec :: [Term] -> List -> List
+exec x l = foldl exec1 l x
+    where
+    exec1 :: List -> Term -> List
+    exec1 l (Head x) = head $ (++ [List []]) $ list $ exec x l
+    exec1 l (Tail x) = List $ drop 1 $ list $ exec x l
+    exec1 l (Cons x y) = List (exec x l : list (exec y l))
+    exec1 l (While x y) = until (null . list . exec x) (exec y) l
 
 main :: IO ()
 main = do
     args <- getArgs
     code <- case args of
-        path : _ -> readFile path
-        _ -> errorWithoutStackTrace "no input files"
-    interact $ toStr . exec code . fromStr
+        s : _ -> readFile s
+        _ -> errorWithoutStackTrace "no input file"
+    interact (showL . exec (parse code) . readL)
