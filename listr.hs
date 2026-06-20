@@ -28,7 +28,7 @@ parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
     parse2 x ('(' : s) = case parse1 s of
         (y, ')' : s1) -> parse2 (x ++ y) s1
         _ -> errorWithoutStackTrace "unmatched brackets"
-    parse2 x (c : s) | c `elem` ".)|" = (x, c : s)
+    parse2 x (c : s) | c `elem` ").|" = (x, c : s)
     parse2 x (_ : s) = parse2 x s
 
 exec :: [Term] -> List -> List
