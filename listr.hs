@@ -25,22 +25,22 @@ parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
 
     parse2 :: Program -> String -> (Program, String)
     parse2 x [] = (x, [])
-    parse2 x ('0' : s) = parse2 (x ++ [Head]) s
-    parse2 x ('1' : s) = parse2 (x ++ [Tail]) s
+    parse2 x ('0' : s) = parse2 (Head : x) s
+    parse2 x ('1' : s) = parse2 (Tail : x) s
     parse2 x ('(' : s) = case parse1 s of
-        (y, ')' : s1) -> parse2 (x ++ y) s1
+        (y, ')' : s1) -> parse2 (y ++ x) s1
         _ -> errorWithoutStackTrace "unmatched brackets"
     parse2 x (c : s) | c `elem` ").|" = (x, c : s)
     parse2 x (_ : s) = parse2 x s
 
 run :: Program -> Value -> Value
-run x l = foldl run1 l x
+run x l = foldr run1 l x
     where
-    run1 :: Value -> Term -> Value
-    run1 l Head = head $ value l ++ [Value []]
-    run1 l Tail = Value $ drop 1 $ value l
-    run1 l (Cons x y) = Value $ run x l : value (run y l)
-    run1 l (While x y) = until (null . value . run x) (run y) l
+    run1 :: Term -> Value -> Value
+    run1 Head l = head $ value l ++ [Value []]
+    run1 Tail l = Value $ drop 1 $ value l
+    run1 (Cons x y) l = Value $ run x l : value (run y l)
+    run1 (While x y) l = until (null . value . run x) (run y) l
 
 main :: IO ()
 main = do
