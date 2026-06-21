@@ -1,27 +1,29 @@
 import System.Environment ( getArgs )
 
-newtype List = List {list :: [List]}
+newtype Value = Value { value :: [Value] }
 
-readL :: String -> List
-readL = List . map (List . (`replicate` List []) . fromEnum)
+encode :: String -> Value
+encode = Value . map (Value . (`replicate` Value []) . fromEnum)
 
-showL :: List -> String
-showL = map (toEnum . length . list) . list
+decode :: Value -> String
+decode = map (toEnum . length . value) . value
 
-data Term = Head | Tail | Cons [Term] [Term] | While [Term] [Term]
+type Program = [Term]
 
-parse :: String -> [Term]
+data Term = Head | Tail | Cons Program Program | While Program Program
+
+parse :: String -> Program
 parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
     (x, []) -> x
     _ -> errorWithoutStackTrace "unmatched brackets"
     where
-    parse1 :: String -> ([Term], String)
+    parse1 :: String -> (Program, String)
     parse1 s = case parse2 [] s of
         (x, '.' : s1) -> let (y, s2) = parse1 s1 in ([Cons x y], s2)
         (x, '|' : s1) -> let (y, s2) = parse1 s1 in ([While x y], s2)
         (x, s1) -> (x, s1)
 
-    parse2 :: [Term] -> String -> ([Term], String)
+    parse2 :: Program -> String -> (Program, String)
     parse2 x [] = (x, [])
     parse2 x ('0' : s) = parse2 (x ++ [Head]) s
     parse2 x ('1' : s) = parse2 (x ++ [Tail]) s
@@ -31,14 +33,14 @@ parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
     parse2 x (c : s) | c `elem` ").|" = (x, c : s)
     parse2 x (_ : s) = parse2 x s
 
-exec :: [Term] -> List -> List
-exec x l = foldl exec1 l x
+run :: Program -> Value -> Value
+run x l = foldl run1 l x
     where
-    exec1 :: List -> Term -> List
-    exec1 l Head = head $ list l ++ [List []]
-    exec1 l Tail = List $ drop 1 $ list l
-    exec1 l (Cons x y) = List $ exec x l : list (exec y l)
-    exec1 l (While x y) = until (null . list . exec x) (exec y) l
+    run1 :: Value -> Term -> Value
+    run1 l Head = head $ value l ++ [Value []]
+    run1 l Tail = Value $ drop 1 $ value l
+    run1 l (Cons x y) = Value $ run x l : value (run y l)
+    run1 l (While x y) = until (null . value . run x) (run y) l
 
 main :: IO ()
 main = do
@@ -46,4 +48,4 @@ main = do
     code <- case args of
         s : _ -> readFile s
         _ -> errorWithoutStackTrace "no input file"
-    interact (showL . exec (parse code) . readL)
+    interact (decode . run (parse code) . encode)
