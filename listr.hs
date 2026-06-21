@@ -34,13 +34,13 @@ parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
     parse2 x (_ : s) = parse2 x s
 
 run :: Program -> Value -> Value
-run x l = foldr run1 l x
+run = flip $ foldr run1
     where
     run1 :: Term -> Value -> Value
-    run1 Head l = head $ unV l ++ [V []]
-    run1 Tail l = V $ drop 1 $ unV l
-    run1 (Cons x y) l = V $ run x l : unV (run y l)
-    run1 (While x y) l = until (null . unV . run x) (run y) l
+    run1 Head = head . (++ [V []]) . unV
+    run1 Tail = V . drop 1 . unV
+    run1 (Cons x y) = \ v -> V $ run x v : unV (run y v)
+    run1 (While x y) = until (null . unV . run x) $ run y
 
 main :: IO ()
 main = do
