@@ -39,7 +39,7 @@ run = flip $ foldr run1
     run1 :: Term -> Value -> Value
     run1 Head = head . (++ [V []]) . unV
     run1 Tail = V . drop 1 . unV
-    run1 (Cons x y) = \ v -> V $ run x v : unV (run y v)
+    run1 (Cons x y) = V . \ v -> run x v : unV (run y v)
     run1 (While x y) = until (null . unV . run x) $ run y
 
 main :: IO ()
