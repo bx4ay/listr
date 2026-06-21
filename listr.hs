@@ -16,10 +16,10 @@ parse s = case parse1 $ concatMap (takeWhile (/= '#')) $ lines s of
     _ -> errorWithoutStackTrace "unmatched brackets"
     where
     parse1 :: String -> ([Term], String)
-    parse1 s = let (x, s1) = parse2 [] s in case s1 of
-        '.' : s2 -> let (y, s3) = parse1 s2 in ([Cons x y], s3)
-        '|' : s2 -> let (y, s3) = parse1 s2 in ([While x y], s3)
-        _ -> (x, s1)
+    parse1 s = case parse2 [] s of
+        (x, '.' : s1) -> let (y, s2) = parse1 s1 in ([Cons x y], s2)
+        (x, '|' : s1) -> let (y, s2) = parse1 s1 in ([While x y], s2)
+        (x, s1) -> (x, s1)
 
     parse2 :: [Term] -> String -> ([Term], String)
     parse2 x [] = (x, [])
@@ -37,7 +37,7 @@ exec x l = foldl exec1 l x
     exec1 :: List -> Term -> List
     exec1 l Head = head $ list l ++ [List []]
     exec1 l Tail = List $ drop 1 $ list l
-    exec1 l (Cons x y) = List (exec x l : list (exec y l))
+    exec1 l (Cons x y) = List $ exec x l : list (exec y l)
     exec1 l (While x y) = until (null . list . exec x) (exec y) l
 
 main :: IO ()
