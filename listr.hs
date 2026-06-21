@@ -48,4 +48,4 @@ main = do
     code <- case args of
         s : _ -> readFile s
         _ -> errorWithoutStackTrace "no input file"
-    interact (decode . run (parse code) . encode)
+    interact $ decode . run (parse code) . encode
