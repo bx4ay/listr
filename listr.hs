@@ -1,12 +1,12 @@
 import System.Environment ( getArgs )
 
-newtype Value = Value { value :: [Value] }
+newtype Value = V { unV :: [Value] }
 
 encode :: String -> Value
-encode = Value . map (Value . (`replicate` Value []) . fromEnum)
+encode = V . map (V . (`replicate` V []) . fromEnum)
 
 decode :: Value -> String
-decode = map (toEnum . length . value) . value
+decode = map (toEnum . length . unV) . unV
 
 type Program = [Term]
 
@@ -37,10 +37,10 @@ run :: Program -> Value -> Value
 run x l = foldr run1 l x
     where
     run1 :: Term -> Value -> Value
-    run1 Head l = head $ value l ++ [Value []]
-    run1 Tail l = Value $ drop 1 $ value l
-    run1 (Cons x y) l = Value $ run x l : value (run y l)
-    run1 (While x y) l = until (null . value . run x) (run y) l
+    run1 Head l = head $ unV l ++ [V []]
+    run1 Tail l = V $ drop 1 $ unV l
+    run1 (Cons x y) l = V $ run x l : unV (run y l)
+    run1 (While x y) l = until (null . unV . run x) (run y) l
 
 main :: IO ()
 main = do
